@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMC MCQ: Respiratory Emergency Case Simulations</title>
+<style>
+  :root {
+    --paper: #eef2f4;
+    --card: #ffffff;
+    --ink: #14232e;
+    --muted: #5a6b77;
+    --line: #cfd9df;
+    --monitor: #0e1a22;
+    --trace: #5fe0b4;
+    --warn: #ffb454;
+    --crit: #ff6b6b;
+    --accent: #1c5d7a;
+    --ok-bg: #e3f4ea; --ok: #1c7a45;
+    --bad-bg: #fbe7e5; --bad: #b3362d;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 18px 80px; }
+  header h1 { font: 700 1.6rem/1.2 Georgia, "Times New Roman", serif; margin: 0 0 6px; }
+  header p { margin: 0; color: var(--muted); }
+
+  .tabs { display: flex; gap: 8px; margin: 22px 0 14px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    padding: 9px 14px; border-radius: 8px; cursor: pointer; font: inherit; font-weight: 600;
+  }
+  .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .status {
+    position: sticky; top: 0; z-index: 5; background: var(--paper);
+    padding: 10px 0; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid var(--line);
+  }
+  .bar { flex: 1; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .score { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .reset { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
+
+  .vignette {
+    background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--accent);
+    border-radius: 6px; padding: 16px 18px; margin: 22px 0 0;
+    font: 1.04rem/1.65 Georgia, "Times New Roman", serif;
+  }
+  .vignette .tag { display: block; font: 600 .85rem system-ui, sans-serif; color: var(--accent); margin-bottom: 4px; }
+  .vignette.update { border-left-color: var(--crit); }
+  .vignette.update .tag { color: var(--bad); }
+
+  .monitor {
+    background: var(--monitor); border-radius: 8px; padding: 14px 16px; margin-top: 12px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px;
+  }
+  .vital span { display: block; font-size: .78rem; color: #8ea3b0; }
+  .vital b { font: 700 1.5rem/1.2 ui-monospace, "SF Mono", Consolas, monospace; color: var(--trace); }
+  .vital.w b { color: var(--warn); }
+  .vital.c b { color: var(--crit); }
+
+  .q { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-top: 18px; }
+  .q h3 { margin: 0 0 12px; font-size: 1.05rem; line-height: 1.4; }
+  .opts { display: grid; gap: 8px; }
+  .opt {
+    display: flex; gap: 10px; text-align: left; width: 100%;
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+    padding: 10px 12px; border-radius: 8px; cursor: pointer; font: inherit;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--accent); background: #f5fafc; }
+  .opt:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .opt .l { font-weight: 700; min-width: 1.2em; }
+  .opt:disabled { cursor: default; }
+  .opt.correct { background: var(--ok-bg); border-color: var(--ok); }
+  .opt.wrong { background: var(--bad-bg); border-color: var(--bad); }
+  .opt.dim { opacity: .6; }
+  .why {
+    margin-top: 14px; padding: 12px 14px; border-radius: 8px; background: #f4f7f9; border: 1px solid var(--line);
+  }
+  .why strong.r { color: var(--ok); } .why strong.x { color: var(--bad); }
+  .why p { margin: 4px 0 0; }
+
+  .done { margin-top: 28px; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  .done h2 { margin: 0 0 6px; font: 700 1.3rem Georgia, serif; }
+  .hidden { display: none; }
+  footer { margin-top: 36px; font-size: .85rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Respiratory emergencies: case simulations</h1>
+    <p>AMC MCQ style. Choose an answer to see the explanation and unlock the next step of the case.</p>
+  </header>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+
+  <div class="status">
+    <div class="bar"><i id="bar"></i></div>
+    <div class="score" id="score">0 / 0</div>
+    <button class="reset" id="reset">Restart case</button>
+  </div>
+
+  <main id="case"></main>
+
+  <footer>Educational practice material for exam preparation. Not a substitute for local guidelines or clinical judgement.</footer>
+</div>
+
+<script>
+const CASES = [
+{
+  title: "Case 1: Asthma",
+  steps: [
+    { vignette: "You are the ED resident. A 24-year-old woman with known asthma presents with 6 hours of worsening breathlessness. She ran out of her preventer 2 months ago. She speaks in single words, has widespread wheeze and accessory muscle use, and is alert and anxious.",
+      vitals: [["RR","32","w"],["HR","125","w"],["BP","120/75",""],["SpO₂ (RA)","91%","w"]] },
+    { q: "Best classification of severity?",
+      o: ["Mild","Moderate","Severe","Life-threatening","Cannot classify without a peak flow"], a: 2,
+      e: "She meets severe criteria (cannot speak sentences, RR >30, HR >120, SpO₂ about 90%). Life-threatening requires drowsiness, a silent chest, hypotension, cyanosis or exhaustion." },
+    { q: "Most appropriate initial management?",
+      o: ["Oral prednisolone only, then reassess in 1 hour",
+          "Titrated O₂, salbutamol via spacer or nebuliser repeated every 20 min, ipratropium, and systemic corticosteroid",
+          "IV aminophylline load, then salbutamol",
+          "High-flow O₂ at 15 L/min, IV magnesium first-line",
+          "IM adrenaline, then intubate"], a: 1,
+      e: "Titrate O₂ to 93-95% (avoid hyperoxia), give repeated SABA, ipratropium and early systemic steroids. IV magnesium is for patients not responding." },
+    { vignette: "40 minutes later she is drowsy and exhausted. Her chest is nearly silent. ABG: pH 7.25, PaCO₂ 55 mmHg, PaO₂ 58 mmHg.", update: true,
+      vitals: [["SpO₂ (NRB 15 L)","86%","c"],["HR","140","c"],["BP","85/50","c"],["PaCO₂","55","c"]] },
+    { q: "Most appropriate next step?",
+      o: ["Continue nebulised salbutamol and reassess in 20 min","Start NIV (BiPAP) on the ward",
+          "IM adrenaline, IV magnesium, and urgent ICU/anaesthetic involvement for intubation",
+          "Chest X-ray before any intervention","Sedate to reduce anxiety"], a: 2,
+      e: "She now has life-threatening asthma (drowsy, silent chest, hypotension, hypoxia despite high-flow O₂). Give IM adrenaline and IV magnesium, and call ICU/anaesthetics for intubation. NIV is unsafe with a falling GCS. Do not delay for imaging." },
+    { q: "How do you interpret the ABG?",
+      o: ["Expected finding in severe asthma, reassuring","Respiratory alkalosis from hyperventilation",
+          "Acute respiratory acidosis, indicating impending respiratory failure","Metabolic acidosis from lactate","Compensated chronic CO₂ retention"], a: 2,
+      e: "In a tachypnoeic asthmatic, a normal or raised PaCO₂ is ominous. It signals respiratory muscle fatigue and impending arrest." },
+    { vignette: "She is intubated and ventilated. Ten minutes later: peak airway pressures are rising sharply. Breath sounds are absent on the right, the trachea is deviated to the left, and neck veins are distended.", update: true,
+      vitals: [["BP","70/40","c"],["HR","150","c"],["SpO₂","Falling","c"],["Peak pressure","Rising","c"]] },
+    { q: "Most likely diagnosis and immediate action?",
+      o: ["Dynamic hyperinflation, so disconnect the circuit only","Mucus plug, so bronchoscopy",
+          "Tension pneumothorax, so immediate needle or finger thoracostomy, then chest drain",
+          "Right main bronchus intubation, so pull back the ETT and get a CXR","Anaphylaxis, so IM adrenaline"], a: 2,
+      e: "Unilateral absent breath sounds, tracheal deviation, raised venous pressure and shock after positive-pressure ventilation indicate tension pneumothorax. Decompress immediately (clinical diagnosis, no CXR). Dynamic hyperinflation causes similar haemodynamics but is bilateral, with no tracheal deviation. Disconnecting the circuit would be the first step in that case." },
+    { q: "Best ventilator strategy once stable?",
+      o: ["High RR, high tidal volume to normalise PaCO₂","Low RR, long expiratory time, low tidal volume, and permissive hypercapnia",
+          "High PEEP to splint the airways","Inverse-ratio ventilation","Maximise minute ventilation to correct acidosis"], a: 1,
+      e: "Prioritise long expiratory time to avoid auto-PEEP and barotrauma, and accept moderate hypercapnia (permissive hypercapnia)." }
+  ]
+},
+{
+  title: "Case 2: COPD",
+  steps: [
+    { vignette: "You are the ED resident. A 68-year-old man presents with 3 days of increasing breathlessness, cough with green sputum and fever. He has a 50 pack-year smoking history and known COPD, on tiotropium only and not on home oxygen. He speaks in short phrases, uses accessory muscles, and has widespread wheeze with coarse crackles at the right base. He is alert but looks tired.",
+      vitals: [["Temp","38.4°C","w"],["RR","28","w"],["HR","110","w"],["BP","130/80",""],["SpO₂ (RA)","82%","c"]] },
+    { q: "Most appropriate immediate oxygen strategy?",
+      o: ["No oxygen until an ABG is available","High-flow O₂ via non-rebreather at 15 L/min",
+          "Titrated O₂ via Venturi mask or nasal prongs, targeting SpO₂ 88-92%","Titrated O₂ targeting SpO₂ 100%","Intubate immediately"], a: 2,
+      e: "In COPD with a risk of CO₂ retention, give titrated O₂ and aim for SpO₂ 88-92%. Withholding oxygen is dangerous. High-flow oxygen and targeting 100% risk worsening hypercapnia." },
+    { q: "Which combination is most appropriate in the first hour?",
+      o: ["Nebulised salbutamol and ipratropium (driven by air), oral prednisolone, and antibiotics","IV aminophylline only",
+          "Oral prednisolone only","IV magnesium and IM adrenaline","Antibiotics only, as the cause is infective"], a: 0,
+      e: "Bronchodilators (air-driven nebulisers, to avoid oxygen-induced hypercapnia), systemic corticosteroids (typically prednisolone 30-50 mg for 5 days) and antibiotics (purulent sputum and fever) are the foundation. Aminophylline is not first-line." },
+    { vignette: "30 minutes later he is more drowsy and confused. ABG: pH 7.24, PaCO₂ 72 mmHg, PaO₂ 62 mmHg, HCO₃⁻ 30 mmol/L.", update: true,
+      vitals: [["RR","30","w"],["HR","115","w"],["SpO₂ (4 L NP)","90%",""],["pH","7.24","c"],["PaCO₂","72","c"]] },
+    { q: "How do you interpret the ABG?",
+      o: ["Acute respiratory alkalosis","Metabolic acidosis with respiratory compensation",
+          "Acute-on-chronic respiratory acidosis (type 2 respiratory failure)","Fully compensated chronic respiratory acidosis","Normal for a COPD patient"], a: 2,
+      e: "pH <7.35 with raised PaCO₂ and raised bicarbonate indicates acute-on-chronic respiratory acidosis. The raised HCO₃⁻ shows chronic retention, while the acidaemia shows an acute worsening. Drowsiness and confusion mean he is deteriorating." },
+    { q: "Most appropriate next step?",
+      o: ["Increase oxygen to 15 L/min to correct hypoxia","Start NIV (BiPAP) with continued bronchodilators, and repeat ABG in 1 hour",
+          "Immediate intubation and ventilation","IV doxapram as first-line","Sedate with a benzodiazepine to reduce his distress"], a: 1,
+      e: "NIV is indicated for COPD exacerbation with persistent acidosis (pH <7.35) and hypercapnia despite optimal medical therapy. It reduces intubation and mortality. Intubation is reserved for NIV failure, worsening conscious state, or inability to protect the airway. Doxapram has been superseded by NIV." },
+    { vignette: "Two hours later on NIV: pH 7.35, PaCO₂ 58 mmHg, and he is alert and comfortable. CXR shows right lower lobe consolidation. Several hours later he suddenly develops severe right-sided pleuritic chest pain and worsening dyspnoea. The right chest is hyperresonant with reduced breath sounds. The trachea is central.", update: true,
+      vitals: [["SpO₂ (on NIV)","84%","c"],["HR","130","c"],["BP","100/60","w"],["Trachea","Central",""]] },
+    { q: "Most likely diagnosis and next step?",
+      o: ["Pulmonary embolism, so start therapeutic anticoagulation","Pneumonia progression, so escalate antibiotics",
+          "Pneumothorax (secondary, due to emphysema and NIV pressure), so urgent CXR and chest drain; NIV may need to be stopped",
+          "Acute MI, so give aspirin and arrange an urgent ECG only","Hyperventilation, so reassure"], a: 2,
+      e: "Sudden pleuritic pain, hyperresonance and reduced breath sounds in a patient with emphysema suggest secondary pneumothorax. The trachea is central because it is not tension (yet). In COPD, a pneumothorax needs a chest drain even if small, particularly on positive pressure. Do not simply observe." },
+    { q: "Which factor is most important to prevent future exacerbations and reduce mortality in this patient?",
+      o: ["Long-term oral corticosteroids","Smoking cessation, vaccination, pulmonary rehabilitation, and optimised inhaler therapy",
+          "Regular prophylactic antibiotics for all patients","Long-term sedatives for anxiety","Avoiding all physical activity"], a: 1,
+      e: "Smoking cessation is the single most effective intervention to slow disease progression. Vaccination (influenza, pneumococcal), pulmonary rehabilitation and optimised inhaler therapy reduce exacerbations and readmissions. Long-term steroids and prophylactic antibiotics are not routine." }
+  ]
+}
+];
+
+const L = "ABCDE";
+const $ = (id) => document.getElementById(id);
+let cur = 0;
+const state = CASES.map(c => ({ answers: {} }));
+
+function totalQs(c) { return c.steps.filter(s => s.q).length; }
+function score(i) {
+  const c = CASES[i]; let n = 0;
+  c.steps.forEach((s, k) => { if (s.q && state[i].answers[k] === s.a) n++; });
+  return n;
+}
+// A step is visible if every question before it has been answered.
+function visibleUpTo(i) {
+  const c = CASES[i]; let last = 0;
+  for (let k = 0; k < c.steps.length; k++) {
+    last = k;
+    if (c.steps[k].q && state[i].answers[k] === undefined) break;
+  }
+  return last;
+}
+
+function renderTabs() {
+  $("tabs").innerHTML = "";
+  CASES.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.role = "tab"; b.textContent = c.title;
+    b.setAttribute("aria-selected", i === cur);
+    b.onclick = () => { cur = i; renderTabs(); renderCase(); };
+    $("tabs").appendChild(b);
+  });
+}
+
+function renderCase(scrollTo) {
+  const c = CASES[cur], st = state[cur];
+  const last = visibleUpTo(cur);
+  const root = $("case"); root.innerHTML = "";
+
+  c.steps.forEach((s, k) => {
+    if (k > last) return;
+    if (s.vignette) {
+      const d = document.createElement("section");
+      d.className = "vignette" + (s.update ? " update" : "");
+      d.innerHTML = `<span class="tag">${s.update ? "Update" : "Presentation"}</span>${s.vignette}`;
+      root.appendChild(d);
+      if (s.vitals) {
+        const m = document.createElement("div"); m.className = "monitor";
+        m.innerHTML = s.vitals.map(v => `<div class="vital ${v[2]}"><span>${v[0]}</span><b>${v[1]}</b></div>`).join("");
+        root.appendChild(m);
+      }
+    } else {
+      const qn = c.steps.slice(0, k + 1).filter(x => x.q).length;
+      const picked = st.answers[k];
+      const box = document.createElement("section"); box.className = "q"; box.id = "q" + k;
+      box.innerHTML = `<h3>Q${qn}. ${s.q}</h3>`;
+      const opts = document.createElement("div"); opts.className = "opts";
+      s.o.forEach((txt, j) => {
+        const b = document.createElement("button"); b.className = "opt";
+        b.innerHTML = `<span class="l">${L[j]}.</span><span>${txt}</span>`;
+        if (picked !== undefined) {
+          b.disabled = true;
+          if (j === s.a) b.classList.add("correct");
+          else if (j === picked) b.classList.add("wrong");
+          else b.classList.add("dim");
+        } else {
+          b.onclick = () => { st.answers[k] = j; renderCase(k); };
+        }
+        opts.appendChild(b);
+      });
+      box.appendChild(opts);
+      if (picked !== undefined) {
+        const ok = picked === s.a;
+        const w = document.createElement("div"); w.className = "why";
+        w.innerHTML = `<strong class="${ok ? "r" : "x"}">${ok ? "Correct." : "Not quite. The answer is " + L[s.a] + "."}</strong><p>${s.e}</p>`;
+        box.appendChild(w);
+      }
+      root.appendChild(box);
+    }
+  });
+
+  const answered = Object.keys(st.answers).length, total = totalQs(c);
+  if (answered === total) {
+    const sc = score(cur);
+    const d = document.createElement("section"); d.className = "done";
+    const msg = sc === total ? "Perfect run." : sc >= total - 1 ? "Strong result. Review the one you missed." : sc >= total / 2 ? "Solid base. Revisit the explanations for the ones you missed." : "Worth another pass. Read each explanation, then restart the case.";
+    d.innerHTML = `<h2>Case complete: ${sc} / ${total}</h2><p>${msg}</p>` +
+      (cur < CASES.length - 1 ? `<button class="tab" id="next">Go to next case</button>` : "");
+    root.appendChild(d);
+    const nx = d.querySelector("#next");
+    if (nx) nx.onclick = () => { cur++; renderTabs(); renderCase(); window.scrollTo(0, 0); };
+  }
+
+  $("bar").style.width = (answered / total * 100) + "%";
+  $("score").textContent = `${score(cur)} / ${answered} correct`;
+
+  if (scrollTo !== undefined) {
+    const nextEl = root.querySelector(".q:last-of-type, .done");
+    const target = root.querySelector("#q" + scrollTo);
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Scroll so the answered question's explanation stays in view.
+    if (target) target.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }
+}
+
+$("reset").onclick = () => { state[cur].answers = {}; renderCase(); window.scrollTo(0, 0); };
+renderTabs(); renderCase();
+</script>
+</body>
+</html>
